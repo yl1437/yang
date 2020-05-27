@@ -208,11 +208,26 @@
                 style="width:300px"></el-input>
             </el-form-item>
             <el-form-item label="开户行" prop="bank" v-show="refund=='银行卡退费'">
-              <el-select v-model="ruleForm.bank" style="width:160px">
-                <el-option value="ruleForm.bank"></el-option>
+              <el-select 
+                v-model="bankCode" 
+                style="width:160px"
+                @change="handleBankCodeInfo"
+                filterable>
+                <el-option 
+                  v-for="item in bank"
+                  :key="item.index"
+                  :label="item.bankName"
+                  :value="item.bankCode"></el-option>
               </el-select>-
-              <el-select v-model="ruleForm.bank"  style="width:160px">
-                <el-option value="ruleForm.bank"></el-option>
+              <el-select 
+                v-model="bankInfoCode"  
+                style="width:160px"
+                filterable>
+                <el-option 
+                  v-for="item in bankInfoList"
+                  :key="item.index"
+                  :label="item.bankInfoName"
+                  :value="item.bankInfoCode"></el-option>
               </el-select>
             </el-form-item>
             <el-form-item label="支付宝账号" prop="alipay" v-show="refund=='支付宝退费'">
@@ -387,11 +402,17 @@ export default {
       period:"",//客户联系方式 下拉默认 绑定
       refund:"银行卡退费",//退费方式默认为银行卡退费
       surrenderFormula:"",//不按退保公式退保
+      bankName:"",//开户行姓名
+      bankCode:"",//开户行编码
+      bank:[],//开户行
+      bankInfoCode:"",//分行编码
+      bankInfoName:"",//分行姓名
+      bankInfoList:[],//分行列表
+
 
       ruleForm: { // 退保/撤单表单
         name: "", 
         bankCad:null,//银行卡号
-        bank:"",//开户行
         alipay:"",//支付宝账号
         userName:"",//支付宝用户名
         date:"",//退保时间
@@ -430,16 +451,22 @@ export default {
     }
   },
   mounted () {
-    
+    this.axios({
+      method:"get",
+      url:"/cores/bank/getBank",
+      data:{
+        bankName:this.bankName,
+        bankCode:this.bankCode
+      },  
+    }).then(bankname=>{
+      this.bank=bankname.data.response
+      
+    })
   },
-  created () {
-      this.axios.all([
-        this.axios.post(`/api/operation/order/${this.orderId}`,{token:this.getCookie("token")}),
-        // this.axios.post('/api/query/PayPeriod'),
-        // this.axios.get('/coreapis/bank/getBank')
-      ]) 
-    .then(this.axios.spread((res,userResp)=>{
-      console,log(res,userResp)
+  created () {   
+    this.axios.post(`/api/operation/order/${this.orderId}`,{token:this.getCookie("token")})
+    .then(res=>{
+      console.log(res)
       this.basicInfo=res.data.response.basicInfo
       this.insure=res.data.response.insure
       this.insured=res.data.response.insured
@@ -486,7 +513,7 @@ export default {
           // console.log(keys.value)
         }
       }
-    }))
+    })
     
   },
   methods: {
@@ -525,11 +552,23 @@ export default {
     handleCheckedChange(val){
       this.checkedList=val
       
+    },
+    handleBankCodeInfo(val){
+      console.log(val)
+      this.axios({
+        method:"get",
+        url:`/cores/bank/getBankInfo/${this.bankCode}`,
+        data:{
+          bankCode:this.bankCode,
+          bankInfoCode:this.bankInfoCode,
+          bankInfoName:this.bankInfoName
+        },
+      }).then(res=>{
+        // console.log(res)
+        this.bankInfoList=res.data.response
+      })
+      
     }
-    // 多选框改变显示信息
-    // handleChecked(val){
-    //   this.isIndeterminate=!this.isIndeterminate
-    // }
   },
   components: {
     SideNav,
